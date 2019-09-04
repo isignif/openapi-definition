@@ -1,0 +1,1262 @@
+openapi: 3.0.2
+info:
+  title: iSignif
+  description: Signifiez vos actes simplement grâce à notre réseau d’huissiers de justice
+  version: "1"
+  termsOfService: https://isignif.fr/tos
+  contact:
+    url: https://isignif.fr/contact
+    email: arousseau@isignif.fr
+  # license:
+  #   name: "CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)"
+  #   url: "https://openweathermap.org/price"
+servers:
+  - url: https://test.isignif.fr/api/v1/
+    description: Test server
+  - url: https://isignif.fr/api/v1/
+    description: Production server
+
+tags:
+  - name: Act
+  - name: Authentification
+
+paths:
+  /acts:
+
+    get:
+      summary: List all acts
+      tags:
+        - Act
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: reference
+          in: query
+          description: The customer reference to filter acts
+          schema:
+            type: string
+        - name: bill_reference
+          in: query
+          description: The customer bill reference to filter acts
+          schema:
+            type: string
+        - name: step
+          in: query
+          description: The current step of this act
+          example: confirmed
+          schema:
+            type: string
+            enum:
+              - created
+              - confirmed
+              - read
+              - signified
+              - complete
+              - ask_cancel
+              - archived
+        - name: act_type_id
+          in: query
+          description: ID of act type
+          schema:
+            type: integer
+        - name: competence_area_id
+          in: query
+          description: ID of competence area
+          schema:
+            type: integer
+        - name: bailiff_id
+          in: query
+          description: ID of Bailiff
+          schema:
+            type: integer
+        - name: advocate_id
+          in: query
+          description: ID of an advocate
+          schema:
+            type: integer
+      responses:
+        200:
+          description: the list of acts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Act'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      summary: Create an act
+      tags:
+        - Act
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: Return the created act
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Act'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+
+      parameters:
+        - $ref: '#/components/parameters/act_express'
+        - $ref: '#/components/parameters/act_act_type_id'
+        - $ref: '#/components/parameters/act_town_id'
+        - $ref: '#/components/parameters/act_reference'
+        - $ref: '#/components/parameters/act_bill_reference'
+        - $ref: '#/components/parameters/act_bill_recipient'
+        - $ref: '#/components/parameters/act_bill_zip_code'
+        - $ref: '#/components/parameters/act_bill_town'
+        - $ref: '#/components/parameters/act_bill_address'
+        - $ref: '#/components/parameters/act_bill_siret'
+        - $ref: '#/components/parameters/act_bill_email'
+        - $ref: '#/components/parameters/act_bill_phone'
+        - $ref: '#/components/parameters/act_desired_deadline'
+        - $ref: '#/components/parameters/act_comment'
+
+  /acts/{act_id}:
+    get:
+      summary: Get all information about the given act
+      tags:
+        - Act
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+      responses:
+        200:
+          description: Return the given act
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Act'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+    put:
+      summary: Update the given act
+      tags:
+        - Act
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/act_express'
+        - $ref: '#/components/parameters/act_act_type_id'
+        - $ref: '#/components/parameters/act_reference'
+        - $ref: '#/components/parameters/act_bill_reference'
+        - $ref: '#/components/parameters/act_bill_recipient'
+        - $ref: '#/components/parameters/act_bill_zip_code'
+        - $ref: '#/components/parameters/act_bill_town'
+        - $ref: '#/components/parameters/act_bill_address'
+        - $ref: '#/components/parameters/act_bill_siret'
+        - $ref: '#/components/parameters/act_bill_email'
+        - $ref: '#/components/parameters/act_bill_phone'
+        - $ref: '#/components/parameters/act_desired_deadline'
+        - $ref: '#/components/parameters/act_comment'
+        # TODO
+      responses:
+        202:
+          description: Act was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Act'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      summary: Destroy the given act if not confirmed
+      tags:
+        - Act
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+      responses:
+        204:
+          description: Act was removed
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+  /acts/{act_id}/ask_cancel:
+    post:
+      description: Send a request to bailiff to cancel significations
+      tags:
+        - ActHistory
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+      responses:
+        200:
+          description: A request was created
+          content:
+            application/json:
+              schema:
+                type: object
+
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+  /acts/{act_id}/confirm:
+    post:
+      description: Confirm act,bailiff will receive a request
+      tags:
+        - ActHistory
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+      responses:
+        200:
+          description: A request was created
+          content:
+            application/json:
+              schema:
+                type: object
+
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+  /acts/{act_id}/act_files:
+    post:
+      summary: Upload a file and attach it to an act or a signification
+      tags:
+        - Act File
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/act_file_id'
+        - $ref: '#/components/parameters/act_file_name'
+        - $ref: '#/components/parameters/act_file_signification_id'
+        - $ref: '#/components/parameters/act_file_kind'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                act_file[files]:
+                  format: binary
+      responses:
+        201:
+          description: List of act files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Act'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+    # get:
+    #   tags:
+    #     - Act File
+    #     - Act
+    #   summary: List all act files of given act
+    #   security:
+    #     - ApiKeyAuth: []
+    #   parameters:
+    #     - $ref: '#/components/parameters/act_id'
+    #   responses:
+    #     200:
+    #       description: List of act files
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: object
+    #             properties:
+    #               data:
+    #                 type: array
+    #                 items:
+    #                     $ref: '#/components/schemas/ActFile'
+    #     403:
+    #       $ref: "#/components/responses/UnauthorizedError"
+    #     404:
+    #       $ref: "#/components/responses/NotFoundError"
+
+  /acts/{act_id}/act_files/{act_file_id}:
+    get:
+      tags:
+        - Act
+      summary: Download a given act file
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/act_file_id'
+      responses:
+        200:
+          description: List of act files
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+            application/docx:
+              schema:
+                type: string
+                format: binary
+            application/png:
+              schema:
+                type: string
+                format: binary
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      summary: Update an act file
+      tags:
+        - Act File
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/act_file_id'
+        - $ref: '#/components/parameters/act_file_name'
+        - $ref: '#/components/parameters/act_file_signification_id'
+        - $ref: '#/components/parameters/act_file_kind'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                act_file[files]:
+                  format: binary
+      responses:
+        200:
+          description: List of act files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActFile'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      summary: Destroy the given act file if not confirmed
+      tags:
+        - Act File
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/act_file_id'
+      responses:
+        204:
+          description: Act file was removed
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+
+  /acts/{act_id}/significations/{signification_id}/messages:
+    get:
+      tags:
+        - Message
+      summary: List all signification's messages
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/signification_id'
+      responses:
+        200:
+          description: List all signification's messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+    post:
+      tags:
+        - Message
+      summary: Create a signification's message
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/act_act_id'
+        - $ref: '#/components/parameters/signification_id'
+        - $ref: '#/components/parameters/message_content'
+      responses:
+        200:
+          description: Return the created signification's message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /tokens:
+    post:
+      tags:
+        - Authentification
+      summary: Obtain the JWT token required for authentification
+      parameters:
+        - name: user[email]
+          required: true
+          in: query
+          description: Email of the account
+          schema:
+            type: string
+        - name: user[password]
+          required: true
+          in: query
+          description: Password of the account
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        403:
+          description: Email or password are invalid
+
+  /advocates:
+    get:
+      summary: List all advocates
+      tags:
+        - Advocate
+      security:
+        - ApiKeyAuth: [support]
+      responses:
+        200:
+          description: the list of advocates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Advocate'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      summary: Create a new account for an advocate
+      tags:
+        - Advocate
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: Return the created act
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advocate'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+
+      parameters:
+        - $ref: '#/components/parameters/advocate_firstname'
+        - $ref: '#/components/parameters/advocate_lastname'
+        - $ref: '#/components/parameters/advocate_email'
+        - $ref: '#/components/parameters/advocate_password'
+        - $ref: '#/components/parameters/advocate_password_confirmation'
+        - $ref: '#/components/parameters/advocate_address_1'
+        - $ref: '#/components/parameters/advocate_address_2'
+        - $ref: '#/components/parameters/advocate_zip_code'
+        - $ref: '#/components/parameters/advocate_town'
+        - $ref: '#/components/parameters/advocate_company_name'
+        - $ref: '#/components/parameters/advocate_siret'
+        - $ref: '#/components/parameters/advocate_phone'
+        - $ref: '#/components/parameters/advocate_sponsorship_code'
+
+  /advocates/{advocate_id}:
+    get:
+      summary: Get all information about the given advocate
+      tags:
+        - Advocate
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/advocate_advocate_id'
+      responses:
+        200:
+          description: Return the given advocate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advocate'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+    put:
+      summary: Update the given act
+      tags:
+        - Advocate
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/advocate_advocate_id'
+        - $ref: '#/components/parameters/advocate_firstname'
+        - $ref: '#/components/parameters/advocate_lastname'
+        - $ref: '#/components/parameters/advocate_email'
+        - $ref: '#/components/parameters/advocate_password'
+        - $ref: '#/components/parameters/advocate_password_confirmation'
+        - $ref: '#/components/parameters/advocate_address_1'
+        - $ref: '#/components/parameters/advocate_address_2'
+        - $ref: '#/components/parameters/advocate_zip_code'
+        - $ref: '#/components/parameters/advocate_town'
+        - $ref: '#/components/parameters/advocate_company_name'
+        - $ref: '#/components/parameters/advocate_siret'
+        - $ref: '#/components/parameters/advocate_phone'
+        - $ref: '#/components/parameters/advocate_sponsorship_code'
+      responses:
+        202:
+          description: Advocate was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advocate'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      summary: Destroy the given advocate
+      tags:
+        - Advocate
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/advocate_advocate_id'
+      responses:
+        204:
+          description: Advocate was removed
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+  /bailiffs:
+    get:
+      summary: List all bailiffs
+      tags:
+        - Bailiff
+      security:
+        - ApiKeyAuth: [support]
+      responses:
+        200:
+          description: the list of bailiffs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Bailiff'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      summary: Create a new account for an bailiff
+      tags:
+        - Bailiff
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: Return the created bailiff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bailiff'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+
+      parameters:
+        - $ref: '#/components/parameters/bailiff_firstname'
+        - $ref: '#/components/parameters/bailiff_lastname'
+        - $ref: '#/components/parameters/bailiff_email'
+        - $ref: '#/components/parameters/bailiff_password'
+        - $ref: '#/components/parameters/bailiff_password_confirmation'
+        - $ref: '#/components/parameters/bailiff_address_1'
+        - $ref: '#/components/parameters/bailiff_address_2'
+        - $ref: '#/components/parameters/bailiff_zip_code'
+        - $ref: '#/components/parameters/bailiff_town'
+        - $ref: '#/components/parameters/bailiff_company_name'
+        - $ref: '#/components/parameters/bailiff_siret'
+        - $ref: '#/components/parameters/bailiff_phone'
+        - $ref: '#/components/parameters/bailiff_sponsorship_code'
+
+  /bailiffs/{bailiff_id}:
+    get:
+      summary: Get all information about the given bailiff
+      tags:
+        - Bailiff
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/bailiff_bailiff_id'
+      responses:
+        200:
+          description: Return the given bailiff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bailiff'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+    put:
+      summary: Update the given act
+      tags:
+        - Bailiff
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/bailiff_bailiff_id'
+        - $ref: '#/components/parameters/bailiff_firstname'
+        - $ref: '#/components/parameters/bailiff_lastname'
+        - $ref: '#/components/parameters/bailiff_email'
+        - $ref: '#/components/parameters/bailiff_password'
+        - $ref: '#/components/parameters/bailiff_password_confirmation'
+        - $ref: '#/components/parameters/bailiff_address_1'
+        - $ref: '#/components/parameters/bailiff_address_2'
+        - $ref: '#/components/parameters/bailiff_zip_code'
+        - $ref: '#/components/parameters/bailiff_town'
+        - $ref: '#/components/parameters/bailiff_company_name'
+        - $ref: '#/components/parameters/bailiff_siret'
+        - $ref: '#/components/parameters/bailiff_phone'
+        - $ref: '#/components/parameters/bailiff_sponsorship_code'
+      responses:
+        202:
+          description: Bailiff was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bailiff'
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        422:
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      summary: Destroy the given bailiff
+      tags:
+        - Bailiff
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/bailiff_bailiff_id'
+      responses:
+        204:
+          description: Bailiff was removed
+        403:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+
+
+# definitions:
+components:
+  securitySchemes:
+    Authorization:
+      name: Authorization
+      in: header
+      type: apiKey
+
+  parameters:
+    # ids
+    bailiff_bailiff_id:
+      name: bailiff_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    advocate_advocate_id:
+      name: advocate_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    act_act_id:
+      name: act_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    act_file_id:
+      name: act_file_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    signification_id:
+      name: signification_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    # acts
+    act_express:
+      name: "[act]express"
+      in: query
+      schema:
+        type: string
+    act_act_type_id:
+      name: "[act]act_type_id"
+      in: query
+      schema:
+        type: string
+      required: true
+    act_town_id:
+      name: "[act]town_id"
+      in: query
+      required: true
+      schema:
+        type: array
+        items:
+          type: integer
+    act_reference:
+      name: "[act]reference"
+      in: query
+      schema:
+        type: string
+    act_bill_reference:
+      name: "[act]bill_reference"
+      in: query
+      schema:
+        type: string
+    act_bill_recipient:
+      name: "[act]bill_recipient"
+      in: query
+      schema:
+        type: string
+    act_bill_zip_code:
+      name: "[act]bill_zip_code"
+      in: query
+      schema:
+        type: string
+    act_bill_town:
+      name: "[act]bill_town"
+      in: query
+      schema:
+        type: string
+    act_bill_address:
+      name: "[act]bill_address"
+      in: query
+      schema:
+        type: string
+    act_bill_siret:
+      name: "[act]bill_siret"
+      in: query
+      schema:
+        type: string
+    act_bill_email:
+      name: "[act]bill_email"
+      in: query
+      schema:
+        type: string
+    act_bill_phone:
+      name: "[act]bill_phone"
+      in: query
+      schema:
+        type: string
+    act_desired_deadline:
+      name: "[act]desired_deadline"
+      in: query
+      schema:
+        type: string
+    act_comment:
+      name: "[act]comment"
+      in: query
+      schema:
+        type: string
+    # act_files
+    act_file_name:
+      name: "act_file[name]"
+      in: query
+      schema:
+        type: string
+    act_file_signification_id:
+      name: "act_file[signification_id]"
+      in: query
+      schema:
+        type: integer
+    act_file_kind:
+      name: "act_file[kind]"
+      in: query
+      schema:
+        type: string
+        enum:
+          - default
+          - to_deliver
+          - instruction_letter
+          - appendices
+          - bill
+          - proof_of_service
+    # advocate
+    # advocate_username:
+    #   name: advocate[username]
+    advocate_firstname:
+      name: advocate[firstname]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_lastname:
+      name: advocate[lastname]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_email:
+      name: advocate[email]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_password:
+      name: advocate[password]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_password_confirmation:
+      name: advocate[password_confirmation]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_address_1:
+      name: advocate[address_1]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_address_2:
+      name: advocate[address_2]
+      in: query
+      schema:
+        type: string
+    advocate_zip_code:
+      name: advocate[zip_code]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_town:
+      name: advocate[town]
+      required: true
+      in: query
+      schema:
+        type: string
+    advocate_company_name:
+      name: advocate[company_name]
+      in: query
+      schema:
+        type: string
+    advocate_siret:
+      name: advocate[siret]
+      in: query
+      schema:
+        type: string
+    advocate_phone:
+      name: advocate[phone]
+      in: query
+      schema:
+        type: string
+    advocate_sponsorship_code:
+      name: advocate[sponsorship_code]
+      in: query
+      schema:
+        type: string
+    # baillifs
+    bailiff_firstname:
+      name: bailiff[firstname]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_lastname:
+      name: bailiff[lastname]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_email:
+      name: bailiff[email]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_password:
+      name: bailiff[password]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_password_confirmation:
+      name: bailiff[password_confirmation]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_address_1:
+      name: bailiff[address_1]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_address_2:
+      name: bailiff[address_2]
+      in: query
+      schema:
+        type: string
+    bailiff_zip_code:
+      name: bailiff[zip_code]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_town:
+      name: bailiff[town]
+      required: true
+      in: query
+      schema:
+        type: string
+    bailiff_company_name:
+      name: bailiff[company_name]
+      in: query
+      schema:
+        type: string
+    bailiff_siret:
+      name: bailiff[siret]
+      in: query
+      schema:
+        type: string
+    bailiff_phone:
+      name: bailiff[phone]
+      in: query
+      schema:
+        type: string
+    bailiff_sponsorship_code:
+      name: bailiff[sponsorship_code]
+      in: query
+      schema:
+        type: string
+    message_content:
+      name: "[message]content"
+      in: query
+      required: true
+      schema:
+        type: string
+
+  responses:
+    UnauthorizedError:
+      description: API key is missing or invalid
+    NotFoundError:
+      description: The model does not exists
+    UnprocessableEntity:
+      description: missing one or more parameters to create object
+      content:
+            application/json:
+              schema:
+                type: object
+
+  schemas:
+    Token:
+      type: object
+      properties:
+        email:
+          type: string
+          description: The email corresponding of JWT owner
+          example: toto@toto.fr
+        token:
+          type: string
+          description: The JWT token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    Advocate:
+      description: Represent a user who can request signification
+      type: object
+      properties:
+        id:
+          type: integer
+        attributes:
+          type: object
+          properties:
+            email:
+              type: string
+            firstname:
+              type: string
+            lastname:
+              type: string
+            activated:
+              type: string
+            created_at:
+              type: string
+            updated_at:
+              type: string
+            last_work:
+              type: string
+            creator_id:
+              type: string
+            must_reset_password:
+              type: string
+            approved:
+              type: string
+            address_1:
+              type: string
+            address_2:
+              type: string
+            zip_code:
+              type: string
+            town:
+              type: string
+            company_name:
+              type: string
+            siret:
+              type: string
+            phone:
+              type: string
+            premium_until:
+              type: string
+    Bailiff:
+      description: Represent a user who can signify acts
+      type: object
+      properties:
+        id:
+          type: integer
+        attributes:
+          type: object
+          properties:
+            email:
+              type: string
+            firstname:
+              type: string
+            lastname:
+              type: string
+            activated:
+              type: string
+            created_at:
+              type: string
+            updated_at:
+              type: string
+            last_work:
+              type: string
+            creator_id:
+              type: string
+            competence_area_id:
+              type: string
+            must_reset_password:
+              type: string
+            approved:
+              type: string
+            address_1:
+              type: string
+            address_2:
+              type: string
+            zip_code:
+              type: string
+            town:
+              type: string
+            company_name:
+              type: string
+            siret:
+              type: string
+            phone:
+              type: string
+
+    ActFile:
+      description: One (or more) file(s) attached to an act or a signification.
+      type: object
+      properties:
+        id:
+          type: integer
+        attributes:
+          type: object
+          properties:
+            name:
+              type: string
+            user_id:
+              type: integer
+            act_id:
+              type: integer
+            created_at:
+              type: string
+            updated_at:
+              type: string
+            signification_id:
+              type: integer
+            kind:
+              type: string
+              enum:
+                - default
+                - to_deliver
+                - instruction_letter
+                - appendices
+                - bill
+                - proof_of_service
+
+    Act:
+      description: An act is a document who can be signified on some
+      type: object
+      properties:
+        id:
+          type: integer
+        attributes:
+          type: object
+          properties:
+            advocate_id:
+              type: integer
+            act_type_id:
+              type: integer
+            created_at:
+              type: string
+              example: '2019-01-01'
+            updated_at:
+              type: string
+              example: '2019-01-01'
+            coefficient:
+              type: integer
+              example: 2
+              description: The coefficient used for estimated value
+            express:
+              type: boolean
+              example: true
+              description: Specify if act must be signified in 24h (`true`) or 5 days (`false`)
+            reference:
+              type: string
+              example: 1A2B3C
+              description: The customer reference for this acts
+            bill_reference:
+              type: string
+              example: 1A2B3C
+              description: The customer reference who must appear on the bailiff bill
+            downloaded_at:
+              type: string
+              example: '2019-01-01'
+            archived_at:
+              type: string
+              example: '2019-01-01'
+            estimated_value_cache:
+              type: number
+              example: 99.99
+              description: Represent the estimated price of act.
+            bill_recipient:
+              type: string
+              example: John Doe
+            bill_siret:
+              type: string
+              description: The customer SIRET who must appear on the bailiff bill
+              example: 437 933 302 00022
+            bill_address:
+              type: string
+              description: The customer address who must appear on the bailiff bill
+              example: 1 rue des Lilas
+            bill_zip_code:
+              type: string
+              description: The customer zip code who must appear on the bailiff bill
+              example: 69001
+            bill_town:
+              type: string
+              description: The customer town who must appear on the bailiff bill
+              example: Lyon
+            bill_email:
+              type: string
+              description: The customer email who must appear on the bailiff bill
+              example: customer@customer.fr
+            bill_phone:
+              type: string
+              example: +33601010101
+              description: The customer phon who must appear on the bailiff bill
+
+
+    Message:
+      description: Represent a message linked to an act's signification
+      type: object
+      properties:
+        id:
+          type: integer
+        attributes:
+          type: object
+          properties:
+            content:
+              type: string
+            signification_id:
+              type: integer
+            user_id:
+              type: integer
+            created_at:
+              type: string
+            updated_at:
+              type: string
+            read_at:
+              type: string
